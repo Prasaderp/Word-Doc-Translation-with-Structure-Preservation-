@@ -167,7 +167,7 @@ Total processing time: XX.XX seconds
 -   **Error Robustness**: The script has error handling, but very unusual or corrupted DOCX structures could still cause issues.
 
 ## Potential Future Enhancements
-
+```
 -   Finer-grained control over NLLB model parameters or selection of different model sizes.
 -   Improved parsing and preservation strategies for diverse mathematical notations.
 -   Advanced sentence segmentation, especially for text rich in placeholders.
