@@ -1,6 +1,6 @@
 # Document Translation with Structure Preservation
 
-This project translates DOCX (and .doc via conversion) documents from English to selected Indian languages (Hindi, Tamil, Telugu) while attempting to preserve formatting, structure, proper nouns, and mathematical variables.
+This project translates DOCX (and .doc via conversion) documents from English to selected Indian languages (Hindi, Tamil, Telugu) while attempting to preserve formatting, structure, proper nouns, and mathematical variables. It can be used via an intuitive Gradio web interface or a command-line interface.
 
 ## Features
 
@@ -45,7 +45,7 @@ This project translates DOCX (and .doc via conversion) documents from English to
     # venv\Scripts\activate
     ```
 
-3.  **Install Python dependencies:**
+3.  **Install Python dependencies (including Gradio for the web interface):**
     ```bash
     pip install -r requirements.txt
     ```
@@ -58,11 +58,39 @@ This project translates DOCX (and .doc via conversion) documents from English to
 
 ## Usage
 
-There are two ways to use this project:
+This project offers two main ways to perform translations:
 
-### 1. Command-Line Interface (CLI)
+### 1. Web Interface (Gradio)
 
-Run the main script from the terminal within the project directory (and activated virtual environment):
+The primary way to interact with the translator is through a user-friendly web interface built with Gradio.
+
+**Prerequisites:**
+- Ensure all dependencies from `requirements.txt` are installed (this includes `gradio`).
+- The backend model and .doc conversion prerequisites (LibreOffice) are the same as for the CLI (see below).
+
+**Running the Gradio App:**
+
+Activate your virtual environment and run the `app.py` script from the project directory:
+
+```bash
+python app.py
+```
+
+This will typically start a local web server (e.g., `http://127.0.0.1:7860`). Open this URL in your web browser. If you launched it with `share=True` (default in current `app.py`), a public link will also be provided for temporary sharing.
+
+**Interface Features:**
+-   Upload your `.docx` or `.doc` file.
+-   Select the target translation language from a dropdown menu.
+-   Optionally, enter any comma-separated entities you wish to keep untranslated.
+-   Click "Submit" to start the translation process.
+-   A status/log box will show progress and any important messages.
+-   Once complete, a download link for the translated `.docx` file will appear.
+
+### 2. Command-Line Interface (CLI)
+
+For users who prefer or require a command-line tool, the script can be run directly.
+
+Run the `main.py` script from the terminal within the project directory (and activated virtual environment):
 
 ```bash
 python main.py
@@ -75,7 +103,7 @@ The script will then prompt you for:
 
 The translated document will be saved in the same directory as the input file. The output filename will typically be `[original_filename]_translated_[language].docx` (e.g., `mydoc_translated_hindi.docx`).
 
-### Example Interaction
+### Example CLI Interaction
 
 ```
 Document Translation Script
@@ -101,32 +129,6 @@ Output saved to: /path/to/my_document_translated_tamil.docx
 Total processing time: XX.XX seconds
 ```
 
-### 2. Web Interface (Gradio)
-
-This project also includes a simple web interface built with Gradio.
-
-**Prerequisites:**
-- Ensure all dependencies from `requirements.txt` are installed, including `gradio`.
-- The backend model and .doc conversion prerequisites (LibreOffice) are the same as for the CLI.
-
-**Running the Gradio App:**
-
-Activate your virtual environment and run the `app.py` script:
-
-```bash
-python app.py
-```
-
-This will typically start a local web server (e.g., `http://127.0.0.1:7860`). Open this URL in your web browser to use the interface.
-
-**Interface Features:**
--   Upload your `.docx` or `.doc` file.
--   Select the target translation language from a dropdown menu.
--   Enter any comma-separated entities you wish to keep untranslated.
--   Click "Submit" to start the translation.
--   A status/log box will show progress and any messages.
--   Once complete, a download link for the translated `.docx` file will appear.
-
 ## Project Structure
 
 ```
@@ -145,13 +147,14 @@ This will typically start a local web server (e.g., `http://127.0.0.1:7860`). Op
 
 ## How it Works (High-Level)
 
-1.  **Input & Conversion**: The script takes a DOCX file path. If a `.doc` file is provided, `file_utils.py` attempts conversion to `.docx` using LibreOffice.
-2.  **Content Parsing (`docx_processing_utils.py`):** The DOCX document is parsed to extract text runs, images, and OMML (Office Math Markup Language) objects. Text is grouped to maintain context while respecting formatting boundaries.
-3.  **Placeholder Generation (`text_processing_utils.py`):** Before translation, specific text segments (user-defined entities, proper nouns via spaCy, mathematical variables, URLs, emails etc.) are identified and replaced with unique placeholders (e.g., `__ENTITY_000001__`). This protects them from being translated.
-4.  **Translation (`translation_service.py`, `model_utils.py`):** The text segments (now containing placeholders) are translated using the NLLB (No Language Left Behind) model. This is done in batches for efficiency, with GPU acceleration if available.
-5.  **Restoration (`text_processing_utils.py`):** After translation, the placeholders in the translated text are replaced with their original content. Logic is included to try and fix placeholders that might have been slightly altered by the translation model.
-6.  **Document Reassembly (`docx_processing_utils.py`, `main.py`):** A new DOCX document is constructed. Translated text is inserted, and an attempt is made to reapply the original formatting (bold, italic, font size, color, etc.) to the corresponding text runs. Images and OMML equations are re-inserted or preserved.
-7.  **Output**: The final translated DOCX file is saved.
+1.  **Input**: The user provides a document through the Gradio interface (`app.py`) or as a path to the CLI (`main.py`).
+2.  **Conversion (`file_utils.py`)**: If a `.doc` file is provided, it attempts conversion to `.docx` using LibreOffice.
+3.  **Content Parsing (`docx_processing_utils.py`):** The DOCX document is parsed to extract text runs, images, and OMML (Office Math Markup Language) objects. Text is grouped to maintain context while respecting formatting boundaries.
+4.  **Placeholder Generation (`text_processing_utils.py`):** Before translation, specific text segments (user-defined entities, proper nouns via spaCy, mathematical variables, URLs, emails etc.) are identified and replaced with unique placeholders (e.g., `__ENTITY_000001__`). This protects them from being translated.
+5.  **Translation (`translation_service.py`, `model_utils.py`):** The text segments (now containing placeholders) are translated using the NLLB (No Language Left Behind) model. This is done in batches for efficiency, with GPU acceleration if available.
+6.  **Restoration (`text_processing_utils.py`):** After translation, the placeholders in the translated text are replaced with their original content. Logic is included to try and fix placeholders that might have been slightly altered by the translation model.
+7.  **Document Reassembly (`docx_processing_utils.py`, `main.py`):** A new DOCX document is constructed. Translated text is inserted, and an attempt is made to reapply the original formatting (bold, italic, font size, color, etc.) to the corresponding text runs. Images and OMML equations are re-inserted or preserved.
+8.  **Output**: The final translated DOCX file is saved.
 
 ## Limitations & Considerations
 
@@ -165,9 +168,6 @@ This will typically start a local web server (e.g., `http://127.0.0.1:7860`). Op
 
 ## Potential Future Enhancements
 
--   A graphical user interface (GUI) for easier file selection and option configuration.
--   Support for more target languages and possibly other translation models.
--   More sophisticated handling of complex document layouts and Word features.
 -   Finer-grained control over NLLB model parameters or selection of different model sizes.
 -   Improved parsing and preservation strategies for diverse mathematical notations.
 -   Advanced sentence segmentation, especially for text rich in placeholders.
