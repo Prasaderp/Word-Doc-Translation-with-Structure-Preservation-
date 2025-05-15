@@ -1,92 +1,89 @@
 # Word Document Translation with Structure Preservation
 
-## Overview
-
-This project provides a solution for translating Microsoft Word documents (specifically `.docx`, with conversion support for `.doc`) while ensuring the original structure and formatting are maintained. It is designed to help users translate technical documents, reports, and other content where preserving elements like tables, images, headings, proper nouns, and mathematical variables is crucial.
-
-The tool processes your document, translates the text content using the NLLB model (supporting languages like Hindi, Tamil, and Telugu), and then reconstructs the document, striving to keep the layout and formatting as close to the original as possible.
+This project translates Microsoft Word documents (`.docx` and `.doc`) into Hindi, Tamil, or Telugu, focusing on preserving the original structure, formatting, and user-specified terms. It uses the NLLB model for translation and provides a Gradio web interface for ease of use.
 
 ## Key Features
 
-*   **Document Translation**: Translates text content within `.docx` files.
-*   **.doc Conversion**: Can convert `.doc` files to `.docx` using LibreOffice.
-*   **Language Support**: Currently supports translation from English to Hindi, Tamil, and Telugu.
-*   **Structure & Formatting Preservation**: Attempts to maintain document structure (paragraphs, tables, headers, footers) and text formatting (bold, italic, font size, color).
-*   **Entity Preservation**: Can preserve user-defined entities, proper nouns, and common mathematical variables from translation.
-*   **Image & Equation Handling**: Extracts and re-inserts images; preserves OMML equation objects.
+* **Preserves Structure & Formatting**: Aims to maintain paragraphs, tables, headers, footers, and text styles (bold, italic, fonts, colors).
+* **Entity & Variable Protection**: Allows users to specify terms to keep untranslated and automatically attempts to preserve proper nouns and mathematical variables.
+* **Image & Equation Handling**: Images are retained, and OMML equation objects are preserved (not translated).
+* **.doc Support**: Converts older `.doc` files to `.docx` using LibreOffice.
+* **Target Languages**: Translates from English to Hindi, Tamil, and Telugu.
+* **User Interface**: Simple Gradio web UI for file upload, language selection, and entity input.
+* **Performance**: Supports CUDA for GPU acceleration.
 
 ## Getting Started
 
-These instructions will guide you through setting up and using the project on your local machine.
-
 ### Prerequisites
 
-Before you begin, ensure you have the following installed:
-
-*   Python (version 3.6 or higher recommended)
-*   `pip` (Python package installer)
-*   **LibreOffice**: Required for converting `.doc` files. Install it from [libreoffice.org](https://www.libreoffice.org/download/download/) and ensure it's accessible from your terminal.
-*   **spaCy English Model**: Used for proper noun detection. You will download this after installing dependencies.
+* **Python**: 3.8+
+* **LibreOffice**: Required for `.doc` conversion. Ensure it's installed and accessible from the command line.
+* **CUDA Toolkit** (Optional): For GPU acceleration.
 
 ### Installation
 
-1.  **Clone the repository:**
-
+1.  **Clone the repository (if applicable) or place project files in a directory.**
     ```bash
-    git clone https://github.com/Prasaderp/Word-Doc-Translation-with-Structure-Preservation-.git
-    cd "Word Doc (Translation with Structure Preservation)"
+    # git clone <repository-url>
+    # cd <repository-directory>
     ```
 
-2.  **Install dependencies:**
-
-    It is highly recommended to use a virtual environment.
-
+2.  **Create and activate a virtual environment (recommended):**
     ```bash
-# Create a virtual environment (optional but recommended)
-    python -m venv .venv
-    # Activate the virtual environment
-    # On Windows:
-    # .venv\Scripts\activate
-    # On macOS/Linux:
-    # source .venv/bin/activate
+    python -m venv venv
+    # On Linux/macOS: source venv/bin/activate
+    # On Windows: venv\Scripts\activate
+    ```
 
-    # Install the required packages
+3.  **Install dependencies:**
+    ```bash
     pip install -r requirements.txt
     ```
-    *(Ensure you have a `requirements.txt` file listing the project's Python dependencies)*
 
-3.  **Download spaCy language model:**
-
+4.  **Download spaCy language model (for proper noun detection):**
     ```bash
     python -m spacy download en_core_web_sm
     ```
 
-### Usage
+## Usage
 
-This project can be used via a web interface or a command-line interface.
+The primary way to use this tool is through the Gradio Web Interface.
 
-#### 1. Web Interface (Gradio)
+1.  **Run the application:**
+    ```bash
+    python app.py
+    ```
+2.  **Open the web interface:**
+    Access the local URL provided in your terminal (usually `http://127.0.0.1:7860`).
+3.  **Translate:**
+    * Upload your `.docx` or `.doc` file.
+    * Select the "Target Language."
+    * Optionally, enter "Entities to Preserve" (comma-separated).
+    * Click "Submit."
+    * Download the translated document when ready. A log of the process will be displayed.
 
-Run the `app.py` script to start the web interface:
+## How It Works Briefly
 
-```bash
-python app.py
-```
+1.  **Input & Preprocessing**: Document uploaded via Gradio. `.doc` files are converted to `.docx`.
+2.  **Content Parsing**: Text, formatting, images, and equations are extracted from the `.docx`.
+3.  **Placeholder Generation**: Non-translatable elements (user entities, proper nouns, math variables, URLs) are replaced with unique placeholders.
+4.  **Translation**: Text segments (with placeholders) are translated in batches using the NLLB model.
+5.  **Restoration & Reassembly**: Placeholders are restored to their original values. The translated text, along with preserved formatting and elements, is reassembled into a new `.docx` document.
 
-Open the provided URL in your web browser. The interface allows you to upload your document, select the target language, and specify entities to preserve.
+## Project Files
 
-#### 2. Command-Line Interface (CLI)
+* `app.py`: Gradio web interface.
+* `main.py`: Core document processing logic.
+* `config.py`: Configuration (model, languages, device).
+* `model_utils.py`: NLLB model loading and GPU management.
+* `text_processing_utils.py`: Placeholder logic, entity/noun extraction.
+* `docx_processing_utils.py`: DOCX parsing, formatting, and reconstruction.
+* `translation_service.py`: Translation batching and inference.
+* `file_utils.py`: `.doc` to `.docx` conversion.
+* `requirements.txt`: Python dependencies.
 
-Run the `main.py` script from your terminal:
+## Limitations
 
-```bash
-python main.py
-```
-
-Follow the prompts to provide the document path, target language, and optional entities to preserve.
-
-## Contributing
-
-If you wish to contribute to this project, please feel free to fork the repository and submit a pull request.
-
----
+* Translation quality depends on the NLLB model.
+* Perfect formatting replication can be challenging for very complex layouts.
+* Only OMML equations are preserved as objects; inline math text might be affected.
