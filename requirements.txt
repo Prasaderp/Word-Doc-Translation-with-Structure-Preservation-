@@ -1,15 +1,9 @@
 torch>=1.10.0
 transformers>=4.15.0
 python-docx>=0.8.11
-docx2txt>=0.8
 spacy>=3.0.0
 gradio>=3.0
 
-# After installing spacy, you may need to download the language model:
-# python -m spacy download en_core_web_sm
-#
 # For .doc file conversion, LibreOffice must be installed on the system.
-# Download manually from https://www.libreoffice.org/download/ for windows
-# On Debian/Ubuntu (or similar):
-# sudo apt-get update
-# sudo apt-get install libreoffice 
+# After installing spacy, you need to download the language model:
+# python -m spacy download en_core_web_sm

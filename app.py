@@ -1,137 +1,108 @@
-# app.py
-import gradio as gr
 import os
-import traceback
+import time
 import tempfile
-import shutil
-import atexit
+import gradio as gr
+import traceback
 
 from main import process_document
 from config import LANGUAGES
 from text_processing_utils import parse_user_entities
 from file_utils import convert_doc_to_docx
-from model_utils import get_model_and_tokenizer
+from model_utils import get_model_and_tokenizer, initialize_model
 
-temp_items_to_clean = []
+get_model_and_tokenizer()
 
-def cleanup_temp_items():
-    print(f"Cleaning up {len(temp_items_to_clean)} temporary items...")
-    for item_path in temp_items_to_clean:
-        try:
-            if os.path.isfile(item_path):
-                os.remove(item_path)
-            elif os.path.isdir(item_path):
-                shutil.rmtree(item_path)
-        except Exception as e:
-            print(f"Error cleaning up temp item {item_path}: {e}")
-    temp_items_to_clean.clear()
 
-atexit.register(cleanup_temp_items)
-
-def translation_pipeline_gradio(uploaded_file_obj, target_lang, entities_str):
-    if uploaded_file_obj is None:
-        return None, "Error: Please upload a document first."
-
-    gradio_temp_input_path = uploaded_file_obj.name
-    original_input_filename = os.path.basename(
-        uploaded_file_obj.orig_name if hasattr(uploaded_file_obj, 'orig_name') and uploaded_file_obj.orig_name 
-        else gradio_temp_input_path
-    )
-
-    status_log = [f"Received: {original_input_filename}"]
+def translation_interface_fn(input_docx_file, target_language, entities_to_preserve_str):
+    if input_docx_file is None:
+        return None, "Error: No DOCX/DOC file provided."
     
-    path_to_process_doc = gradio_temp_input_path
-    conversion_work_dir = None 
+    doc_path = input_docx_file.name
+    original_file_name = os.path.basename(input_docx_file.name if hasattr(input_docx_file, 'name') else str(input_docx_file))
 
-    if gradio_temp_input_path.lower().endswith('.doc'):
-        status_log.append("Input is a .doc file, attempting conversion to .docx...")
-        conversion_work_dir = tempfile.mkdtemp()
-        temp_items_to_clean.append(conversion_work_dir)
 
-        copied_doc_for_conversion = os.path.join(conversion_work_dir, os.path.basename(gradio_temp_input_path))
-        shutil.copyfile(gradio_temp_input_path, copied_doc_for_conversion)
-
-        try:
-            converted_docx_path = convert_doc_to_docx(copied_doc_for_conversion)
-            if not converted_docx_path.lower().endswith('.docx') or not os.path.exists(converted_docx_path):
-                raise FileNotFoundError("Conversion did not produce a valid .docx file or the file was not found.")
-            status_log.append(f"Successfully converted .doc to .docx: {os.path.basename(converted_docx_path)}")
-            path_to_process_doc = converted_docx_path
-        except Exception as e:
-            detailed_error = traceback.format_exc()
-            status_log.append(f"Error during .doc conversion: {str(e)}\nDetails: {detailed_error}")
-            return None, "\n".join(status_log)
+    if not doc_path.lower().endswith(('.docx', '.doc')):
+        return None, "Error: Input file must be a .doc or .docx file."
     
-    final_translated_output_path = None
+    status_messages = [f"Received file: {original_file_name}"]
+    processed_doc_path = doc_path
+    output_temp_dir_obj = tempfile.TemporaryDirectory()
+    output_temp_dir = output_temp_dir_obj.name
+
+    
     try:
-        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp_output_gen:
-            final_translated_output_path = tmp_output_gen.name
-        temp_items_to_clean.append(final_translated_output_path) 
+        if doc_path.lower().endswith('.doc'):
+            status_messages.append("Input is a .doc file. Attempting conversion to .docx...")
+            conversion_start_time = time.time()
+            # Copy the uploaded .doc file to a path with the correct extension for LibreOffice
+            temp_doc_for_conversion_name = os.path.join(output_temp_dir, original_file_name)
+            with open(doc_path, 'rb') as f_src, open(temp_doc_for_conversion_name, 'wb') as f_dst:
+                f_dst.write(f_src.read())
 
-        status_log.append(f"Processing document: {os.path.basename(path_to_process_doc)}")
-        status_log.append(f"Target language: {target_lang}")
+            try:
+                processed_doc_path = convert_doc_to_docx(temp_doc_for_conversion_name)
+                status_messages.append(f".doc successfully converted to: {os.path.basename(processed_doc_path)}")
+            except Exception as e:
+                error_msg = f"Error during .doc to .docx conversion: {e}. Please convert the .doc file to .docx manually and try again."
+                status_messages.append(error_msg)
+                return None, "\n".join(status_messages)
         
-        entities_list = parse_user_entities(entities_str)
-        if entities_list:
-            status_log.append(f"User-defined entities to preserve: {', '.join(entities_list)}")
+        entities_to_preserve = parse_user_entities(entities_to_preserve_str)
+        status_messages.append(f"Target language: {target_language}")
+        if entities_to_preserve:
+            status_messages.append(f"User-defined entities to preserve: {', '.join(entities_to_preserve)}")
         else:
-            status_log.append("No custom entities specified for preservation.")
+            status_messages.append("No additional user-defined entities to preserve.")
         
-        get_model_and_tokenizer() 
+        status_messages.append(f"Starting translation process for {os.path.basename(processed_doc_path)}...")
+        start_time_processing = time.time()
         
-        process_document(path_to_process_doc, final_translated_output_path, entities_list, target_lang)
+        # Ensure output_path for process_document is within the temp directory
+        base, ext = os.path.splitext(os.path.basename(original_file_name)) # Use original_file_name for consistent output naming
+        output_filename = f"{base}_translated_{target_language.lower()}{'.docx'}" # Ensure .docx extension
+        output_path = os.path.join(output_temp_dir, output_filename)
         
-        if not os.path.exists(final_translated_output_path) or os.path.getsize(final_translated_output_path) == 0:
-            raise FileNotFoundError("Translated document was not created or is empty.")
-
-        output_base_name, _ = os.path.splitext(original_input_filename)
-        download_filename_suggestion = f"{output_base_name}_translated_{target_lang.lower()}.docx"
-
-        status_log.append(f"Processing complete. Translated document '{download_filename_suggestion}' is ready for download.")
+        process_document(processed_doc_path, output_path, entities_to_preserve, target_language)
         
-        return final_translated_output_path, "\n".join(status_log)
+        total_time = time.time() - start_time_processing
+        status_messages.append(f"Translation to {target_language} completed.")
+        status_messages.append(f"Output file '{output_filename}' is ready for download.")
+        status_messages.append(f"Total processing time: {total_time:.1f}s")
+        
+        return output_path, "\n".join(status_messages)
 
     except Exception as e:
-        detailed_error = traceback.format_exc()
-        status_log.append(f"An error occurred during the translation process: {str(e)}\nDetails: {detailed_error}")
-        return None, "\n".join(status_log)
+        error_full_trace = traceback.format_exc()
+        status_messages.append(f"An critical error occurred: {e}")
+        status_messages.append(f"Details: {error_full_trace}")
+        return None, "\n".join(status_messages)
+    # TemporaryDirectory will be cleaned up automatically when output_temp_dir_obj goes out of scope
+    # or by Gradio's own temp file handling if output_path is correctly handled as a temp file by gr.File output.
 
-
-app_title = "Document Translator with Structure Preservation"
-app_description = ("""
-Upload a .docx or .doc file, select the target language, and optionally list comma-separated entities to preserve. 
-All processing happens on the server. The translated .docx file will be provided for download.
-Note: 
-- .doc file conversion requires LibreOffice to be installed and accessible in the system's PATH.
-- Model initialization (first time) or GPU memory resets can cause a delay on the first translation after app start.
-- Processing times vary based on document size and system (GPU recommended).
-""")
-article_info = "<p style='text-align: center;'>Powered by NLLB, spaCy, python-docx, and Gradio. <br> Ensure LibreOffice is installed for .doc support.</p>"
-
-print("Initializing translation model for Gradio application...")
-get_model_and_tokenizer()
-print("Translation model ready.")
 
 iface = gr.Interface(
-    fn=translation_pipeline_gradio,
+    fn=translation_interface_fn,
     inputs=[
-        gr.File(label="Upload Document (.docx or .doc)", file_types=['.docx', '.doc']),
-        gr.Dropdown(label="Select Target Language", choices=list(LANGUAGES.keys()), value=list(LANGUAGES.keys())[0]),
-        gr.Textbox(label="Entities to Preserve (comma-separated, optional)", placeholder="e.g., ProjectName, ModelX, Terminology")
+        gr.File(label="Upload DOCX or DOC File", file_types=[".docx", ".doc"]),
+        gr.Dropdown(label="Select Target Language", choices=list(LANGUAGES.keys()), value="Hindi"),
+        gr.Textbox(label="Entities to Preserve (comma-separated, optional)", placeholder="e.g., Aigenthix, Model_X1")
     ],
     outputs=[
         gr.File(label="Download Translated Document"),
-        gr.Textbox(label="Status / Log", lines=15, interactive=False, show_label=True)
+        gr.Textbox(label="Processing Status & Logs", lines=15, interactive=False)
     ],
-    title=app_title,
-    description=app_description,
-    article=article_info,
-    allow_flagging='never',
+    title="Word Document Translator (Indic Languages)",
+    description="Translate .docx or .doc files to Hindi, Tamil, or Telugu. \n" \
+                "The system preserves formatting, structure (including images and tables by not modifying them) and tries to keep specified entities untranslated. \n" \
+                "Processing can take some time depending on document size and complexity. \n" \
+                "Note: .doc to .docx conversion requires LibreOffice installed on the system where this Tool is run.",
+    allow_flagging="never",
     examples=[
-        [None, "Hindi", "NLLB, Python"], 
+        [None, "Hindi", "Planck Institute, Albert Einstein"],
+        [None, "Tamil", "University of Cambridge, Project Kavach"],
+        [None, "Telugu", "IIT, RDBMS"],
     ]
 )
 
-if __name__ == '__main__':
-    print("Launching Gradio interface...")
-    iface.launch(share=True, debug=True) 
+if __name__ == "__main__":
+    iface.launch(share=True, debug=True)
