@@ -34,9 +34,8 @@ Before you begin, ensure you have the following installed:
 
     ```bash
     git clone https://github.com/Prasaderp/Word-Doc-Translation-with-Structure-Preservation-.git
-    cd YOUR_REPOSITORY_NAME
+    cd "Word Doc (Translation with Structure Preservation)"
     ```
-    *(Replace `YOUR_USERNAME/YOUR_REPOSITORY_NAME` with the actual repository details)*
 
 2.  **Install dependencies:**
 
@@ -91,5 +90,3 @@ Follow the prompts to provide the document path, target language, and optional e
 If you wish to contribute to this project, please feel free to fork the repository and submit a pull request.
 
 ---
-
-*This README provides a template. Please fill in the bracketed sections `[...]` and replace placeholder text like `YOUR_USERNAME/YOUR_REPOSITORY_NAME` and specific usage details if your entry points or parameters differ.* 
