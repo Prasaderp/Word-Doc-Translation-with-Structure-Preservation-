@@ -1,4 +1,4 @@
-# Word Document Translation with Structure Preservation
+# Word Document/Docx Translator with Structure Preservation
 
 
 
