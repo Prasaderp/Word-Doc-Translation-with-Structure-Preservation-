@@ -35,6 +35,7 @@ This project translates Microsoft Word documents (`.docx` and `.doc`) into Hindi
 
 
 * **Python**: 3.11+
+* OpenAI key 
 
 
 
