@@ -2,7 +2,7 @@
 
 
 
-This project translates Microsoft Word documents (`.docx` and `.doc`) into Hindi, Tamil, or Telugu, focusing on preserving the original structure, formatting, and user-specified terms. It uses the NLLB model for translation and provides a Gradio web interface for ease of use.
+This project translates Microsoft Word documents (`.docx` and `.doc`) into Hindi, Tamil, or Telugu (you can add any language you want) focusing on preserving the original structure, formatting, and user-specified terms. It uses the OpenAI chatgpt-4o-mini model for translation and provides a Gradio web interface for ease of use.
 
 
 
