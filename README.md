@@ -41,69 +41,54 @@ This project translates Microsoft Word documents (`.docx` and `.doc`) into Hindi
 
 ### Installation
 
+1.  Clone the repository (if applicable) or place project files in a directory.
 
+    ```bash
+    git clone https://github.com/Prasaderp/Word-Doc-Translation-with-Structure-Preservation-.git
+    cd Word-Doc-Translation-with-Structure-Preservation-
+    ```
+    
 
-1.  **Clone the repository (if applicable) or place project files in a directory.**
+2. **Create and activate a virtual environment (recommended):**
 
-    ```bash
+    ```bash
+    # Create the virtual environment
+    python -m venv venv
 
-    # git clone https://github.com/Prasaderp/Word-Doc-Translation-with-Structure-Preservation-.git
+    # Activate the virtual environment
+    # On Linux/macOS:
+    source venv/bin/activate
 
-    # cd Word-Doc-Translation-with-Structure-Preservation-
+    # On Windows:
+    venv\Scripts\activate
+    ```
+    
 
-    ```
+3. **Install dependencies:**
 
+    ```bash
+    pip install -r requirements.txt
+    ```
+    
 
+4. **Download spaCy language model (for proper noun detection):**
 
-2.  **Create and activate a virtual environment (recommended):**
-
-    ```bash
-
-    python -m venv venv
-
-    # On Linux/macOS: source venv/bin/activate
-
-    # On Windows: venv\Scripts\activate
-
-    ```
-
-
-
-3.  **Install dependencies:**
-
-    ```bash
-
-    pip install -r requirements.txt
-
-    ```
-
-
-
-4.  **Download spaCy language model (for proper noun detection):**
-
-    ```bash
-
-    python -m spacy download en_core_web_sm
-
-    ```
+    ```bash
+    python -m spacy download en_core_web_sm
+    ```
 
 
 
 ## Usage
 
-
-
 The primary way to use this tool is through the Gradio Web Interface.
 
 
+1. **Run the application:**
 
-1.  **Run the application:**
-
-    ```bash
-
-    python app.py
-
-    ```
+    ```bash
+    python app.py
+    ```
 
 2.  **Open the web interface:**
 
